@@ -1,0 +1,28 @@
+﻿Analyzing flutter_application_1...                              
+
+  error - The argument type 'double?' can't be assigned to the parameter type 'num'.  - lib\features\properties\bloc\properties_bloc.dart:104:65 - argument_type_not_assignable
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\properties\presentation\pages\property_details_page.dart:86:55 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\properties\presentation\pages\property_details_page.dart:169:35 - deprecated_member_use
+  error - Target of URI doesn't exist: '../bloc/properties_bloc.dart' - lib\features\properties\presentation\pages\property_list_page.dart:4:8 - uri_does_not_exist
+  error - The method 'PropertiesBloc' isn't defined for the type 'PropertyListPage' - lib\features\properties\presentation\pages\property_list_page.dart:14:28 - undefined_method
+  error - The method 'PropertiesFetchStarted' isn't defined for the type 'PropertyListPage' - lib\features\properties\presentation\pages\property_list_page.dart:14:50 - undefined_method
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\properties\presentation\pages\property_list_page.dart:63:47 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\properties\presentation\pages\property_list_page.dart:85:49 - deprecated_member_use
+  error - The name 'PropertiesBloc' isn't a type, so it can't be used as a type argument - lib\features\properties\presentation\pages\property_list_page.dart:91:60 - non_type_as_type_argument
+  error - The method 'PropertiesSearchQueryChanged' isn't defined for the type 'PropertyListView' - lib\features\properties\presentation\pages\property_list_page.dart:91:82 - undefined_method
+  error - The name 'PropertiesBloc' isn't a type, so it can't be used as a type argument - lib\features\properties\presentation\pages\property_list_page.dart:109:47 - non_type_as_type_argument
+  error - The name 'PropertiesBloc' isn't a type, so it can't be used as a type argument - lib\features\properties\presentation\pages\property_list_page.dart:127:36 - non_type_as_type_argument
+  error - The name 'PropertiesState' isn't a type, so it can't be used as a type argument - lib\features\properties\presentation\pages\property_list_page.dart:127:52 - non_type_as_type_argument
+  error - The property 'status' can't be unconditionally accessed because the receiver can be 'null' - lib\features\properties\presentation\pages\property_list_page.dart:129:31 - unchecked_use_of_nullable_value
+  error - Undefined name 'PropertiesStatus' - lib\features\properties\presentation\pages\property_list_page.dart:129:41 - undefined_identifier
+  error - The property 'status' can't be unconditionally accessed because the receiver can be 'null' - lib\features\properties\presentation\pages\property_list_page.dart:131:38 - unchecked_use_of_nullable_value
+  error - Undefined name 'PropertiesStatus' - lib\features\properties\presentation\pages\property_list_page.dart:131:48 - undefined_identifier
+  error - The property 'filteredProperties' can't be unconditionally accessed because the receiver can be 'null' - lib\features\properties\presentation\pages\property_list_page.dart:132:33 - unchecked_use_of_nullable_value
+  error - The property 'filteredProperties' can't be unconditionally accessed because the receiver can be 'null' - lib\features\properties\presentation\pages\property_list_page.dart:139:42 - unchecked_use_of_nullable_value
+  error - The property 'filteredProperties' can't be unconditionally accessed because the receiver can be 'null' - lib\features\properties\presentation\pages\property_list_page.dart:141:63 - unchecked_use_of_nullable_value
+  error - The property 'status' can't be unconditionally accessed because the receiver can be 'null' - lib\features\properties\presentation\pages\property_list_page.dart:144:38 - unchecked_use_of_nullable_value
+  error - Undefined name 'PropertiesStatus' - lib\features\properties\presentation\pages\property_list_page.dart:144:48 - undefined_identifier
+  error - The property 'errorMessage' can't be unconditionally accessed because the receiver can be 'null' - lib\features\properties\presentation\pages\property_list_page.dart:145:55 - unchecked_use_of_nullable_value
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\properties\presentation\widgets\property_card.dart:28:35 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\properties\presentation\widgets\property_card.dart:64:43 - deprecated_member_use
+

@@ -1,0 +1,14 @@
+﻿Analyzing flutter_application_1...                              
+
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\properties\presentation\pages\main_page.dart:51:35 - deprecated_member_use
+  error - Target of URI doesn't exist: '../../../../login/presentation/pages/login_page.dart' - lib\features\properties\presentation\pages\profile_page.dart:2:8 - uri_does_not_exist
+  error - The name 'LoginPage' isn't a class - lib\features\properties\presentation\pages\profile_page.dart:84:59 - creation_with_non_type
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\properties\presentation\pages\profile_page.dart:137:33 - deprecated_member_use
+  error - The name 'LoginPage' isn't a class - lib\features\properties\presentation\pages\profile_page.dart:175:57 - creation_with_non_type
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\properties\presentation\pages\property_details_page.dart:86:55 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\properties\presentation\pages\property_details_page.dart:169:35 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\properties\presentation\pages\property_list_page.dart:63:47 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\properties\presentation\pages\property_list_page.dart:85:49 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\properties\presentation\widgets\property_card.dart:28:35 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\properties\presentation\widgets\property_card.dart:64:43 - deprecated_member_use
+

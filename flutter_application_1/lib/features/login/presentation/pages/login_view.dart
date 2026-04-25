@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../bloc/login_bloc.dart';
-import '../../../counter/presentation/pages/counter_page.dart';
+import '../../../properties/presentation/pages/main_page.dart';
 
 class LoginView extends StatelessWidget {
   const LoginView({super.key});
@@ -12,7 +12,12 @@ class LoginView extends StatelessWidget {
       listener: (context, state) {
         if (state.status == LoginStatus.success || state.status == LoginStatus.guestSuccess) {
           Navigator.of(context).pushReplacement(
-            MaterialPageRoute(builder: (_) => const CounterPage()),
+            MaterialPageRoute(
+              builder: (_) => MainPage(
+                isGuest: state.status == LoginStatus.guestSuccess,
+                email: state.status == LoginStatus.success ? state.email : null,
+              ),
+            ),
           );
         } else if (state.status == LoginStatus.failure) {
           ScaffoldMessenger.of(context).showSnackBar(

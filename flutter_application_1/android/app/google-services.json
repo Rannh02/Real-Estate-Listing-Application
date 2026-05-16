@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "694892522992",
+    "project_id": "realestatelisting-8ae36",
+    "storage_bucket": "realestatelisting-8ae36.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:694892522992:android:b2f5f2dd94ae73ec4c8135",
+        "android_client_info": {
+          "package_name": "com.example.flutter_application_1"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAagexDrtykC3ZEmPatAYCMDIiFFxKNTbc"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

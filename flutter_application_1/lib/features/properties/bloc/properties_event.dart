@@ -27,3 +27,12 @@ class PropertiesSearchQueryChanged extends PropertiesEvent {
   @override
   List<Object?> get props => [query];
 }
+
+class PropertiesToggleSave extends PropertiesEvent {
+  final String propertyId;
+
+  const PropertiesToggleSave(this.propertyId);
+
+  @override
+  List<Object?> get props => [propertyId];
+}

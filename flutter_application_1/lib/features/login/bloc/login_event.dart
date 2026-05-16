@@ -30,3 +30,5 @@ class GuestLoginPressed extends LoginEvent {}
 class ForgotPasswordPressed extends LoginEvent {}
 
 class RegisterPressed extends LoginEvent {}
+
+class GoogleLoginPressed extends LoginEvent {}

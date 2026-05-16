@@ -1,7 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_storage/firebase_storage.dart';
+import 'package:image_picker/image_picker.dart';
+import 'dart:io';
 import 'package:flutter_application_1/features/login/presentation/pages/login_page.dart';
 
-class ProfilePage extends StatelessWidget {
+class ProfilePage extends StatefulWidget {
   final bool isGuest;
   final String? email;
 
@@ -12,185 +18,602 @@ class ProfilePage extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFFF8F9FA),
-      body: SingleChildScrollView(
+  State<ProfilePage> createState() => _ProfilePageState();
+}
+
+class _ProfilePageState extends State<ProfilePage> {
+  static const Color primaryNavy = Color(0xFF0A1D37);
+  static const Color gold = Color(0xFFFFD700);
+
+  bool _isUploadingPhoto = false;
+
+  String? get _uid => FirebaseAuth.instance.currentUser?.uid;
+
+  Future<void> _changeProfilePhoto() async {
+    if (widget.isGuest) return;
+
+    final source = await _showSourceDialog();
+    if (source == null) return;
+
+    try {
+      final picker = ImagePicker();
+      final picked = await picker.pickImage(
+        source: source,
+        maxWidth: 512,
+        maxHeight: 512,
+        imageQuality: 85,
+      );
+      if (picked == null) return;
+
+      setState(() => _isUploadingPhoto = true);
+
+      final uid = _uid!;
+      final ref = FirebaseStorage.instance
+          .ref()
+          .child('profile_images')
+          .child('$uid.jpg');
+
+      // Upload file and verify task succeeded before getting URL
+      final task = await ref.putFile(File(picked.path));
+      if (task.state != TaskState.success) {
+        throw Exception('Upload did not complete successfully.');
+      }
+      final url = await ref.getDownloadURL();
+
+      await FirebaseFirestore.instance.collection('Users').doc(uid).update({
+        'profileImageUrl': url,
+        'lastUpdated': FieldValue.serverTimestamp(),
+      });
+
+      if (mounted) {
+        setState(() => _isUploadingPhoto = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Profile photo updated!')),
+        );
+      }
+    } on FirebaseException catch (e) {
+      setState(() => _isUploadingPhoto = false);
+      if (mounted) {
+        final msg = e.code == 'object-not-found' || e.code == 'storage/object-not-found'
+            ? 'Firebase Storage is not enabled. Please activate it in the Firebase console.'
+            : 'Storage error: ${e.message ?? e.code}';
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(msg), duration: const Duration(seconds: 5)),
+        );
+      }
+    } catch (e) {
+      setState(() => _isUploadingPhoto = false);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to update photo: $e')),
+        );
+      }
+    }
+  }
+
+  Future<ImageSource?> _showSourceDialog() {
+    return showModalBottomSheet<ImageSource>(
+      context: context,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (_) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Change Photo',
+                style: GoogleFonts.playfairDisplay(
+                  fontSize: 20,
+                  fontWeight: FontWeight.w800,
+                  color: primaryNavy,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                'Update your profile photo',
+                style: GoogleFonts.inter(fontSize: 13, color: Colors.grey.shade500),
+              ),
+              const SizedBox(height: 24),
+              Row(
+                children: [
+                  Expanded(
+                    child: _sourceOption(
+                      icon: Icons.camera_alt_rounded,
+                      label: 'Camera',
+                      onTap: () => Navigator.pop(context, ImageSource.camera),
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: _sourceOption(
+                      icon: Icons.photo_library_rounded,
+                      label: 'Gallery',
+                      onTap: () => Navigator.pop(context, ImageSource.gallery),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _sourceOption({
+    required IconData icon,
+    required String label,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 20),
+        decoration: BoxDecoration(
+          color: const Color(0xFFF1F5F9),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: Colors.grey.shade200),
+        ),
         child: Column(
           children: [
-            _buildHeader(context),
-            const SizedBox(height: 30),
-            _buildProfileSection(),
-            const SizedBox(height: 30),
-            _buildSettingsSection(context),
+            Icon(icon, size: 32, color: primaryNavy),
+            const SizedBox(height: 8),
+            Text(
+              label,
+              style: GoogleFonts.inter(
+                fontWeight: FontWeight.w700,
+                fontSize: 13,
+                color: primaryNavy,
+              ),
+            ),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildHeader(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.only(top: 60, left: 24, right: 24, bottom: 30),
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.vertical(bottom: Radius.circular(40)),
-      ),
-      child: Column(
-        children: [
-          Stack(
-            children: [
-              Container(
-                width: 120,
-                height: 120,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  border: Border.all(color: Colors.redAccent, width: 4),
-                  image: const DecorationImage(
-                    image: NetworkImage('https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=400&q=80'),
-                    fit: BoxFit.cover,
-                  ),
-                ),
-              ),
-              Positioned(
-                bottom: 0,
-                right: 0,
-                child: Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: const BoxDecoration(
-                    color: Colors.redAccent,
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Icon(Icons.edit, color: Colors.white, size: 20),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 20),
-          Text(
-            isGuest ? 'Guest User' : (email?.split('@')[0].toUpperCase() ?? 'User'),
-            style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            isGuest ? 'Browse and save properties' : (email ?? 'user@example.com'),
-            style: TextStyle(color: Colors.grey[600], fontSize: 16),
-          ),
-          if (isGuest) ...[
-            const SizedBox(height: 20),
-            ElevatedButton(
-              onPressed: () {
-                Navigator.of(context).pushAndRemoveUntil(
-                  MaterialPageRoute(builder: (_) => const LoginPage()),
-                  (route) => false,
-                );
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.redAccent,
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(15),
-                ),
-              ),
-              child: const Text('Register for Full Access', style: TextStyle(fontWeight: FontWeight.bold)),
+  @override
+  Widget build(BuildContext context) {
+    if (widget.isGuest) {
+      return _buildGuestProfile();
+    }
+
+    // Use real-time stream for logged-in users so profile photo updates instantly
+    final uid = _uid;
+    if (uid == null) return _buildGuestProfile();
+
+    return StreamBuilder<DocumentSnapshot>(
+      stream: FirebaseFirestore.instance
+          .collection('Users')
+          .doc(uid)
+          .snapshots(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Scaffold(
+            backgroundColor: Color(0xFFF8F9FA),
+            body: Center(
+              child: CircularProgressIndicator(color: primaryNavy),
             ),
-          ],
-        ],
-      ),
+          );
+        }
+
+        final data = snapshot.data?.data() as Map<String, dynamic>?;
+        return _buildProfile(data);
+      },
     );
   }
 
-  Widget _buildProfileSection() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 24),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'My Activity',
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 15),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+  Widget _buildGuestProfile() => _buildProfile(null);
+
+  Widget _buildProfile(Map<String, dynamic>? data) {
+    final String firstName = data?['firstname'] ?? '';
+    final String lastName = data?['lastname'] ?? '';
+    final String fullName = '$firstName $lastName'.trim();
+    final String displayName = widget.isGuest
+        ? 'Guest Explorer'
+        : (fullName.isNotEmpty ? fullName : (widget.email?.split('@')[0] ?? 'User'));
+
+    final String displayEmail = widget.isGuest
+        ? 'Browse and save properties'
+        : (widget.email ?? data?['Email'] ?? '');
+
+    final String phoneNumber = data?['phoneNumber'] ?? 'Not provided';
+
+    final String? rawPhotoUrl = data?['profileImageUrl'] as String?;
+    final String? photoUrl = (rawPhotoUrl != null && rawPhotoUrl.isNotEmpty)
+        ? rawPhotoUrl
+        : null;
+
+    final String middleName = data?['middlename'] ?? '';
+    final String fullNameWithMiddle =
+        '$firstName${middleName.isNotEmpty ? ' $middleName' : ''} $lastName'.trim();
+
+    final String initials = widget.isGuest
+        ? 'G'
+        : (displayName.isNotEmpty ? displayName[0].toUpperCase() : 'U');
+
+    return Scaffold(
+      backgroundColor: const Color(0xFFF8F9FA),
+      body: SafeArea(
+        child: SingleChildScrollView(
+          child: Column(
             children: [
-              _activityItem(Icons.favorite_border, 'Favorites', '12'),
-              _activityItem(Icons.history, 'Recent', '5'),
-              _activityItem(Icons.message_outlined, 'Inquiries', '2'),
+              // ── Top Banner ─────────────────────────────────────────────
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.fromLTRB(24, 40, 24, 60),
+                decoration: const BoxDecoration(
+                  color: primaryNavy,
+                  borderRadius: BorderRadius.vertical(bottom: Radius.circular(40)),
+                ),
+                child: Column(
+                  children: [
+                    // Avatar
+                    GestureDetector(
+                      onTap: _changeProfilePhoto,
+                      child: Stack(
+                        alignment: Alignment.bottomRight,
+                        children: [
+                          Container(
+                            width: 100,
+                            height: 100,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: gold,
+                              border: Border.all(
+                                color: gold.withOpacity(0.6),
+                                width: 3,
+                              ),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: gold.withOpacity(0.4),
+                                  blurRadius: 20,
+                                  spreadRadius: 2,
+                                ),
+                              ],
+                            ),
+                            clipBehavior: Clip.antiAlias,
+                            child: _isUploadingPhoto
+                                ? const Center(
+                                    child: CircularProgressIndicator(
+                                      color: Colors.white,
+                                      strokeWidth: 2,
+                                    ),
+                                  )
+                                : _buildAvatar(photoUrl, initials),
+                          ),
+                          if (!widget.isGuest)
+                            Container(
+                              width: 30,
+                              height: 30,
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                shape: BoxShape.circle,
+                                border: Border.all(color: primaryNavy, width: 2),
+                              ),
+                              child: Icon(
+                                Icons.camera_alt_rounded,
+                                size: 14,
+                                color: primaryNavy,
+                              ),
+                            ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      displayName.isEmpty ? 'User' : displayName,
+                      style: GoogleFonts.playfairDisplay(
+                        color: Colors.white,
+                        fontSize: 22,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      displayEmail,
+                      style: GoogleFonts.inter(
+                        color: Colors.white60,
+                        fontSize: 13,
+                      ),
+                    ),
+                    const SizedBox(height: 14),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: gold.withOpacity(0.15),
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(color: gold.withOpacity(0.4)),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            widget.isGuest ? Icons.explore : Icons.verified,
+                            color: gold,
+                            size: 14,
+                          ),
+                          const SizedBox(width: 6),
+                          Text(
+                            widget.isGuest ? 'Guest Access' : 'Verified Buyer',
+                            style: GoogleFonts.inter(
+                              color: gold,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    if (!widget.isGuest)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 10),
+                        child: TextButton.icon(
+                          onPressed: _changeProfilePhoto,
+                          icon: Icon(
+                            photoUrl != null ? Icons.edit_rounded : Icons.add_a_photo_rounded,
+                            size: 14,
+                            color: Colors.white54,
+                          ),
+                          label: Text(
+                            photoUrl != null ? 'Change photo' : 'Add profile photo',
+                            style: GoogleFonts.inter(
+                              color: Colors.white54,
+                              fontSize: 12,
+                            ),
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+
+              const SizedBox(height: 24),
+
+              // ── Activity Stats ──────────────────────────────────────────
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24),
+                child: Container(
+                  padding: const EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(20),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.05),
+                        blurRadius: 15,
+                        offset: const Offset(0, 6),
+                      ),
+                    ],
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceAround,
+                    children: [
+                      _stat('12', 'Favorites', Icons.favorite_border, Colors.red.shade400),
+                      Container(width: 1, height: 40, color: Colors.grey.shade200),
+                      _stat('5', 'Recent', Icons.history, primaryNavy),
+                      Container(width: 1, height: 40, color: Colors.grey.shade200),
+                      _stat('2', 'Inquiries', Icons.chat_bubble_outline, Colors.blue.shade600),
+                    ],
+                  ),
+                ),
+              ),
+
+              const SizedBox(height: 24),
+
+              // ── Personal Info card ──────────────────────────────────────
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24),
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(20),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.05),
+                        blurRadius: 15,
+                        offset: const Offset(0, 6),
+                      ),
+                    ],
+                  ),
+                  child: Column(
+                    children: [
+                      _infoRow(
+                        Icons.person_outline,
+                        'Full Name',
+                        fullNameWithMiddle.isNotEmpty ? fullNameWithMiddle : 'Not provided',
+                      ),
+                      Divider(height: 1, color: Colors.grey.shade100),
+                      _infoRow(
+                        Icons.email_outlined,
+                        'Email Address',
+                        widget.email ?? data?['Email'] ?? 'Not provided',
+                      ),
+                      Divider(height: 1, color: Colors.grey.shade100),
+                      _infoRow(Icons.phone_outlined, 'Phone Number', phoneNumber),
+                      Divider(height: 1, color: Colors.grey.shade100),
+                      _infoRow(Icons.notifications_none, 'Notifications', 'On'),
+                      Divider(height: 1, color: Colors.grey.shade100),
+                      _infoRow(Icons.security, 'Security', 'Password & Biometrics'),
+                    ],
+                  ),
+                ),
+              ),
+
+              const SizedBox(height: 32),
+
+              // ── Action Button ───────────────────────────────────────────
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24),
+                child: SizedBox(
+                  width: double.infinity,
+                  height: 56,
+                  child: widget.isGuest
+                      ? ElevatedButton(
+                          onPressed: () {
+                            Navigator.of(context).pushAndRemoveUntil(
+                              MaterialPageRoute(builder: (_) => const LoginPage()),
+                              (route) => false,
+                            );
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: primaryNavy,
+                            foregroundColor: Colors.white,
+                            elevation: 0,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                          ),
+                          child: Text(
+                            'Sign In for Full Access',
+                            style: GoogleFonts.inter(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
+                        )
+                      : OutlinedButton.icon(
+                          onPressed: () {
+                            Navigator.of(context).pushAndRemoveUntil(
+                              MaterialPageRoute(builder: (_) => const LoginPage()),
+                              (route) => false,
+                            );
+                          },
+                          icon: const Icon(Icons.logout_rounded, size: 18),
+                          label: Text(
+                            'Log Out',
+                            style: GoogleFonts.inter(
+                              fontSize: 15,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: Colors.red.shade600,
+                            side: BorderSide(color: Colors.red.shade300),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(14),
+                            ),
+                          ),
+                        ),
+                ),
+              ),
+
+              const SizedBox(height: 40),
             ],
           ),
-        ],
+        ),
       ),
     );
   }
 
-  Widget _activityItem(IconData icon, String label, String count) {
-    return Container(
+  /// Builds the avatar image, with a direct Image.network (no cache) + initials fallback.
+  Widget _buildAvatar(String? photoUrl, String initials) {
+    if (photoUrl == null || photoUrl.isEmpty) {
+      return Center(
+        child: Text(
+          initials,
+          style: GoogleFonts.playfairDisplay(
+            fontSize: 36,
+            fontWeight: FontWeight.w800,
+            color: primaryNavy,
+          ),
+        ),
+      );
+    }
+
+    return Image.network(
+      photoUrl,
+      fit: BoxFit.cover,
       width: 100,
-      padding: const EdgeInsets.symmetric(vertical: 20),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
+      height: 100,
+      loadingBuilder: (context, child, progress) {
+        if (progress == null) return child;
+        return Center(
+          child: Text(
+            initials,
+            style: GoogleFonts.playfairDisplay(
+              fontSize: 36,
+              fontWeight: FontWeight.w800,
+              color: primaryNavy,
+            ),
           ),
-        ],
-      ),
-      child: Column(
-        children: [
-          Icon(icon, color: Colors.redAccent),
-          const SizedBox(height: 10),
-          Text(count, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-          const SizedBox(height: 4),
-          Text(label, style: TextStyle(color: Colors.grey[600], fontSize: 12)),
-        ],
-      ),
+        );
+      },
+      errorBuilder: (context, error, stack) {
+        return Center(
+          child: Text(
+            initials,
+            style: GoogleFonts.playfairDisplay(
+              fontSize: 36,
+              fontWeight: FontWeight.w800,
+              color: primaryNavy,
+            ),
+          ),
+        );
+      },
     );
   }
 
-  Widget _buildSettingsSection(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 24),
-      padding: const EdgeInsets.all(10),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(25),
-      ),
-      child: Column(
-        children: [
-          _settingsItem(Icons.person_outline, 'Personal Information'),
-          _settingsItem(Icons.payment_outlined, 'Payment Methods'),
-          _settingsItem(Icons.notifications_none, 'Notification Settings'),
-          _settingsItem(Icons.security, 'Security & Privacy'),
-          const Divider(),
-          _settingsItem(
-            Icons.logout,
-            'Logout',
-            color: Colors.red,
-            onTap: () {
-              Navigator.of(context).pushAndRemoveUntil(
-                MaterialPageRoute(builder: (_) => const LoginPage()),
-                (route) => false,
-              );
-            },
+  Widget _stat(String value, String label, IconData icon, Color color) {
+    return Column(
+      children: [
+        Icon(icon, color: color, size: 20),
+        const SizedBox(height: 6),
+        Text(
+          value,
+          style: GoogleFonts.inter(
+            fontWeight: FontWeight.w800,
+            fontSize: 16,
+            color: primaryNavy,
           ),
-        ],
-      ),
+        ),
+        Text(
+          label,
+          style: GoogleFonts.inter(fontSize: 11, color: Colors.grey.shade500),
+        ),
+      ],
     );
   }
 
-  Widget _settingsItem(IconData icon, String title, {Color? color, VoidCallback? onTap}) {
-    return ListTile(
-      leading: Icon(icon, color: color ?? Colors.grey[700]),
-      title: Text(
-        title,
-        style: TextStyle(color: color ?? Colors.black, fontWeight: FontWeight.w500),
+  Widget _infoRow(IconData icon, String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+      child: Row(
+        children: [
+          Icon(icon, size: 20, color: primaryNavy),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  label,
+                  style: GoogleFonts.inter(
+                    fontSize: 11,
+                    color: Colors.grey.shade500,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                Text(
+                  value,
+                  style: GoogleFonts.inter(
+                    fontSize: 13,
+                    color: primaryNavy,
+                    fontWeight: FontWeight.w600,
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+            ),
+          ),
+          const Icon(Icons.chevron_right, size: 16, color: Colors.grey),
+        ],
       ),
-      trailing: const Icon(Icons.chevron_right, size: 20),
-      onTap: onTap ?? () {},
     );
   }
 }
